@@ -10,7 +10,15 @@ import yaml
 from traceback import print_exc
 
 LOCATION = os.path.realpath(os.path.join(os.getcwd(), os.path.dirname(__file__)))
+IMMEDIATE = 'immediate_command_char'
+RECURRING = 'recurring_command_char'
+CALIBRATIONS_FILENAME = 'calibrations.json'
+CONF_FILENAME = 'conf.yml'
 evolver_conf = {}
+command_queue = []
+
+with open(os.path.realpath(os.path.join(os.getcwd(),os.path.dirname(__file__), CONF_FILENAME)), 'r') as ymlfile:
+        evolver_conf = yaml.load(ymlfile, Loader=yaml.FullLoader)
 
 # Create socket.IO Server
 sio = socketio.AsyncServer(async_mode='asgi', cors_allowed_origins='*')
@@ -59,7 +67,6 @@ async def on_command(sid, data):
     if fields_expected_incoming is not None:
         evolver_conf['experimental_params'][param]['fields_expected_incoming'] = fields_expected_incoming
 
-
     # Save to config the values sent in for the parameter
     with open(os.path.realpath(os.path.join(os.getcwd(),os.path.dirname(__file__), evolver.CONF_FILENAME)), 'w') as ymlfile:
         yaml.dump(evolver_conf, ymlfile)
@@ -68,3 +75,11 @@ async def on_command(sid, data):
         clear_broadcast(param)
         command_queue.insert(0, {'param': param, 'value': value, 'type': IMMEDIATE})
     await sio.emit('commandbroadcast', data, namespace = '/dpu-evolver')
+
+def clear_broadcast(param=None):
+    """ Removes broadcast commands of a specific param from queue """
+    global command_queue
+    for i, command in enumerate(command_queue):
+        if (command['param'] == param or param is None) and command['type'] == RECURRING:
+            command_queue.pop(i)
+            break
