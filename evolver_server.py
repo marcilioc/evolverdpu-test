@@ -74,8 +74,11 @@ async def on_command(sid, data):
     if immediate:
         clear_broadcast(param)
         command_queue.insert(0, {'param': param, 'value': value, 'type': IMMEDIATE})
+    
     await sio.emit('commandbroadcast', data, namespace = '/dpu-evolver')
+    print('commandbroadcast sent')
 
+# Broadcast definitions
 def clear_broadcast(param=None):
     """ Removes broadcast commands of a specific param from queue """
     global command_queue
@@ -83,3 +86,67 @@ def clear_broadcast(param=None):
         if (command['param'] == param or param is None) and command['type'] == RECURRING:
             command_queue.pop(i)
             break
+
+async def run_commands():
+    global command_queue, serial_connection
+    data = {}
+    while len(command_queue) > 0:
+        command = command_queue.pop(0)
+        try:
+            if command['param'] == 'wait':
+                time.sleep(command['value'])
+                continue
+            returned_data = serial_communication(command['param'], command['value'], command['type'])
+            if returned_data is not None:
+                data[command['param']] = returned_data
+        except (TypeError, ValueError, serial.serialutil.SerialException, EvolverSerialError) as e:
+            print_exc(file = sys.stdout)
+    return data
+
+def get_num_commands():
+    global command_queue
+    return len(command_queue)
+
+def process_commands(parameters):
+    """
+        Add all recurring commands and pre/post commands to the command queue
+        Immediate commands will have already been added to queue, so are ignored
+    """
+    for param, config in parameters.items():
+        if config['recurring']: 
+            if "pre" in config: # run this command prior to the main command
+                sub_command(config['pre'], parameters)
+
+            # Main command
+            command_queue.append({'param': param, 'value': config['value'], 'type': RECURRING})
+
+            if "post" in config: # run this command after the main command
+                sub_command(config['post'], parameters)
+
+def sub_command(command_list, parameters):
+    """
+        Append a list of commands to the command queue
+    """
+    for command in command_list:
+        parameter = command['param']
+        value = command['value']
+        if value == 'values':
+            value = parameters[parameter]['value']
+        command_queue.append({'param': parameter, 'value': value, 'type': IMMEDIATE})
+
+async def broadcast(commands_in_queue):
+    global command_queue
+    broadcast_data = {}
+    clear_broadcast()
+    if not commands_in_queue:
+        process_commands(evolver_conf['experimental_params'])
+
+    # Always run commands so that IMMEDIATE requests occur. RECURRING requests only happen if no commands in queue
+    broadcast_data['data'] = await run_commands()
+    broadcast_data['config'] = evolver_conf['experimental_params']
+    if not commands_in_queue:
+        print('Broadcasting data', flush = True)
+        broadcast_data['ip'] = evolver_conf['evolver_ip']
+        broadcast_data['timestamp'] = time.time()
+        print(broadcast_data, flush = True)
+        await sio.emit('broadcast', broadcast_data, namespace='/dpu-evolver')
