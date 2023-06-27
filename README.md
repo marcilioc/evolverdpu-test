@@ -15,10 +15,10 @@ Firstly, once in the project folder, install the requirements of this server run
 
 This test runs on [Uvicorn](https://www.uvicorn.org/) ASGI web server implementation for Python. To run the server on localhost:
 
-    $ uvicorn --reload socketioServer:app --port=8081
+    $ uvicorn --reload evolver_server:app --port=8081
 
 If it is needed to expose the port to other devices, the following code will expose the IP of your server computer with the selected port:
 
-    $ uvicorn --reload socketioServer:app --host 0.0.0.0 --port=8081
+    $ uvicorn --reload evolver_server:app --host 0.0.0.0 --port=8081
 
 **The port 8081 is a default port of the eVOLVER DPU, which is the study object of this repository.**
