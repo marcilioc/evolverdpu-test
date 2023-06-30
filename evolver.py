@@ -3,7 +3,6 @@ import yaml
 import time
 import asyncio
 from multi_server import MultiServer
-from threading import Thread
 import socket
 import evolver_server
 import os

@@ -62,7 +62,55 @@ experimental_params:
     fields_expected_incoming: 49
     fields_expected_outgoing: 49
     recurring: false
-    value: null
+    value:
+    - --
+    - --
+    - --
+    - --
+    - --
+    - --
+    - --
+    - --
+    - --
+    - --
+    - --
+    - --
+    - --
+    - --
+    - --
+    - --
+    - --
+    - --
+    - --
+    - --
+    - --
+    - --
+    - --
+    - --
+    - --
+    - --
+    - --
+    - --
+    - --
+    - --
+    - --
+    - --
+    - '1'
+    - '1'
+    - '1'
+    - '1'
+    - --
+    - --
+    - --
+    - --
+    - --
+    - --
+    - --
+    - --
+    - --
+    - --
+    - --
+    - --
   stir:
     fields_expected_incoming: 17
     fields_expected_outgoing: 17
@@ -89,22 +137,22 @@ experimental_params:
     fields_expected_outgoing: 17
     recurring: true
     value:
+    - '1879'
+    - '1882'
+    - '1810'
+    - '1823'
+    - '1820'
+    - '1815'
+    - '1812'
+    - '1801'
     - 4095
     - 4095
     - 4095
     - 4095
-    - 4095
-    - 4095
-    - 4095
-    - 4095
-    - 4095
-    - 4095
-    - 4095
-    - 4095
-    - 4095
-    - 4095
-    - 4095
-    - 4095
+    - '1885'
+    - '1865'
+    - '1879'
+    - '1882'
 fitted_data_directory: fittedCal
 immediate_command_char: i
 num_sleeves: 16

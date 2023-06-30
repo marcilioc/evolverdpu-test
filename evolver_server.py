@@ -21,9 +21,9 @@ with open(os.path.realpath(os.path.join(os.getcwd(),os.path.dirname(__file__), C
         evolver_conf = yaml.load(ymlfile, Loader=yaml.FullLoader)
 
 # Create socket.IO Server
-sio = socketio.AsyncServer(async_mode='asgi', cors_allowed_origins='*')
+sio = socketio.AsyncServer(async_mode='asgi', cors_allowed_origins='*', async_handlers=True)
 
-# warp with a WSGI application
+# Wrap it in an ASGI application
 app = socketio.ASGIApp(sio)
 
 @sio.event
@@ -77,6 +77,36 @@ async def on_command(sid, data):
     
     await sio.emit('commandbroadcast', data, namespace = '/dpu-evolver')
     print('commandbroadcast sent')
+
+@sio.on('getactivecal', namespace = '/dpu-evolver')
+async def on_getactivecal(sid, data):
+    try:
+        active_calibrations = []
+        with open(os.path.join(LOCATION, CALIBRATIONS_FILENAME)) as f:
+            calibrations = json.load(f)
+            for calibration in calibrations:
+                for fit in calibration['fits']:
+                    if fit['active']:
+                        active_calibrations.append(calibration)
+                        break
+        await sio.emit('activecalibrations', active_calibrations, namespace = '/dpu-evolver')
+    except FileNotFoundError:
+        # print_calibration_file_error()
+        print('Calibration file error')
+
+@sio.on('getfitnames', namespace = '/dpu-evolver')
+async def on_getfitnames(sid, data):
+    fit_names = []
+    print("Retrieving fit names...", flush = True)
+    try:
+        with open(os.path.join(LOCATION, CALIBRATIONS_FILENAME)) as f:
+            calibrations = json.load(f)
+            for calibration in calibrations:
+                for fit in calibration['fits']:
+                    fit_names.append({'name': fit['name'], 'calibrationType': calibration['calibrationType']})
+    except FileNotFoundError:
+        # print_calibration_file_error()
+        print('Calibration file error')
 
 # Broadcast definitions
 def clear_broadcast(param=None):
