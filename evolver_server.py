@@ -43,6 +43,7 @@ async def on_getdevicename(sid, data):
 
 @sio.on('command', namespace = '/dpu-evolver')
 async def on_command(sid, data):
+    print(data)
     global command_queue, evolver_conf
     print('Received COMMAND', flush = True)
     param = data.get('param', None)
@@ -107,6 +108,64 @@ async def on_getfitnames(sid, data):
     except FileNotFoundError:
         # print_calibration_file_error()
         print('Calibration file error')
+
+@sio.on('setrawcalibration', namespace = '/dpu-evolver')
+async def on_setrawcalibration(sid, data):
+    print('Received raw calibration')
+    try:
+        calibrations = []
+        with open(os.path.join(LOCATION, CALIBRATIONS_FILENAME)) as f:
+            calibrations = json.load(f)
+
+            # First, delete existing calibration by same name if it exists
+            index_to_delete = -1
+            for i, calibration in enumerate(calibrations):
+                if calibration["name"] == data["name"]:
+                    index_to_delete = i
+            if index_to_delete >= 0:
+                del calibrations[index_to_delete]
+
+            """
+                Add the calibration into the list. `data` should be formatted according
+                to the cal schema, containing a name, params, and raw field.
+            """
+            calibrations.append(data)
+        with open(os.path.join(LOCATION, CALIBRATIONS_FILENAME), 'w') as f:
+            json.dump(calibrations, f)
+            print('Sending calibration raw')
+            await sio.emit('calibrationrawcallback', 'success', namespace = '/dpu-evolver')
+    except FileNotFoundError:
+        # print_calibration_file_error()
+        print('Calibration file error')
+
+@sio.on('getcalibrationnames', namespace = '/dpu-evolver')
+async def on_getcalibrationnames(sid, data):
+    calibration_names = []
+    print("Reteiving cal names...", flush = True)
+    try:
+        with open(os.path.join(LOCATION, CALIBRATIONS_FILENAME)) as f:
+            calibrations = json.load(f)
+            for calibration in calibrations:
+                calibration_names.append({'name': calibration['name'], 'calibrationType': calibration['calibrationType']})
+    except FileNotFoundError:
+        # print_calibration_file_error()
+        print("Calibration file error")
+
+    await sio.emit("calibrationnames", calibration_names, namespace = '/dpu-evolver')
+
+@sio.on('getcalibration', namespace = '/dpu-evolver')
+async def on_getcalibration(sid, data):
+    print('Sending calibration...')
+    try:
+        with open(os.path.join(LOCATION, CALIBRATIONS_FILENAME)) as f:
+            calibrations = json.load(f)
+            for calibration in calibrations:
+                if calibration["name"] == data["name"]:
+                    await sio.emit('calibration', calibration, namespace = '/dpu-evolver')
+                    break
+    except FileNotFoundError:
+        # print_calibration_file_error()
+        print("Calibration file error")
 
 # Broadcast definitions
 def clear_broadcast(param=None):
